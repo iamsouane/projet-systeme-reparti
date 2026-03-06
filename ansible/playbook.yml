@@ -1,0 +1,66 @@
+---
+- name: DevOps Clean Installation
+  hosts: dev
+  become: yes
+
+  tasks:
+
+  # =====================================================
+  # UPDATE SYSTEM
+  # =====================================================
+  - name: Update apt cache
+    apt:
+      update_cache: yes
+
+  # =====================================================
+  # BASE TOOLS
+  # =====================================================
+  - name: Install base tools
+    apt:
+      name:
+        - curl
+        - git
+        - ca-certificates
+        - gnupg
+        - conntrack
+      state: present
+
+  # =====================================================
+  # DOCKER
+  # =====================================================
+  - name: Install Docker
+    apt:
+      name: docker.io
+      state: present
+
+  - name: Enable and start Docker
+    systemd:
+      name: docker
+      state: started
+      enabled: yes
+
+  # =====================================================
+  # KUBECTL
+  # =====================================================
+  - name: Download kubectl
+    get_url:
+      url: https://dl.k8s.io/release/v1.29.0/bin/linux/amd64/kubectl
+      dest: /usr/local/bin/kubectl
+      mode: '0755'
+
+  # =====================================================
+  # MINIKUBE
+  # =====================================================
+  - name: Download Minikube
+    get_url:
+      url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+      dest: /usr/local/bin/minikube
+      mode: '0755'
+
+  # =====================================================
+  # JAVA
+  # =====================================================
+  - name: Install Java 17
+    apt:
+      name: openjdk-17-jdk
+      state: present

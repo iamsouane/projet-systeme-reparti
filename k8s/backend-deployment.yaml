@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: backend
+
+  template:
+    metadata:
+      labels:
+        app: backend
+
+    spec:
+      containers:
+        - name: backend
+          image: iamsouane/backend:1.0
+          imagePullPolicy: Always   # ⭐ TRÈS IMPORTANT
+
+          ports:
+            - containerPort: 8000
+
+          env:   # ⭐ Variables PostgreSQL (sécurité + flexibilité)
+            - name: DB_NAME
+              value: "systeme_reparti"
+
+            - name: DB_USER
+              value: "devuser"
+
+            - name: DB_PASSWORD
+              value: "devpass"
+
+            - name: DB_HOST
+              value: "postgres"
+
+            - name: DB_PORT
+              value: "5432"
+
+          readinessProbe:   # ⭐ Health check (bon pour soutenance)
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 10
