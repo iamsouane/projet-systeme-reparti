@@ -1,4 +1,7 @@
 from rest_framework import viewsets, permissions
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from django.contrib.auth.models import User
 
 from .models import Produit
@@ -30,3 +33,20 @@ class UserViewSet(viewsets.ModelViewSet):
         if self.action == "create":
             return [permissions.AllowAny()]
         return [permissions.IsAdminUser()]
+
+
+# =========================
+# CURRENT USER (Utilisateur connecté)
+# =========================
+class CurrentUserView(APIView):
+    """
+    Endpoint pour récupérer les informations de l'utilisateur actuellement connecté
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Retourne les données de l'utilisateur connecté
+        """
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)

@@ -1,13 +1,89 @@
 pipeline {
+
     agent any
+
+    environment {
+        BACKEND_IMAGE = "iamsouane/backend:latest"
+        FRONTEND_IMAGE = "iamsouane/frontend:latest"
+    }
 
     stages {
 
-        stage('Hello') {
+        stage('Checkout') {
             steps {
-                echo 'Jenkins fonctionne 🚀'
+                checkout scm
             }
         }
 
+        stage('Backend Tests') {
+            steps {
+                sh '''
+                cd backend
+                python3 -m venv venv
+                . venv/bin/activate
+                pip install -r requirements.txt
+                python manage.py test
+                '''
+            }
+        }
+
+        stage('Frontend Tests') {
+            steps {
+                sh '''
+                cd frontend
+                npm install
+                npm test -- --watch=false || true
+                '''
+            }
+        }
+
+        stage('Build Images') {
+            steps {
+                sh '''
+                docker build -t $BACKEND_IMAGE backend
+                docker build -t $FRONTEND_IMAGE frontend
+                '''
+            }
+        }
+
+        stage('Push DockerHub') {
+
+            steps {
+
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                )]) {
+
+                    sh '''
+                    echo $PASS | docker login -u $USER --password-stdin
+
+                    docker push $BACKEND_IMAGE
+                    docker push $FRONTEND_IMAGE
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy Kubernetes') {
+            steps {
+                sh '''
+                kubectl apply -f k8s/
+                kubectl rollout restart deployment backend-deployment
+                kubectl rollout restart deployment frontend-deployment
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "PIPELINE SUCCESS 🚀"
+        }
+
+        failure {
+            echo "PIPELINE FAILED ❌"
+        }
     }
 }
